@@ -26,7 +26,7 @@ class NegativeSamplingRandomForestAd(sklearn.ensemble.RandomForestClassifier,
                                      BaseAnomalyDetectionAlgorithm):
   """Anomaly Detector with a Random Forest Classifier and negative sampling."""
 
-  def __init__(self, *args, sample_ratio=2.0, sample_delta=0.05, **kwargs):
+  def __init__(self, sample_ratio=2.0, sample_delta=0.05, **kwargs):
     """Constructs a NS-RF Anomaly Detector.
 
     Args:
@@ -35,10 +35,18 @@ class NegativeSamplingRandomForestAd(sklearn.ensemble.RandomForestClassifier,
       sample_delta: sample extension beypnd min and max limits of pos sample.
       **kwargs: See the sklearn.ensemble.RandomForestClassifier.
     """
-    super(NegativeSamplingRandomForestAd, self).__init__(*args, **kwargs)
+    super(NegativeSamplingRandomForestAd, self).__init__(**kwargs)
     self._normalization_info = None
     self._sample_ratio = sample_ratio
     self._sample_delta = sample_delta
+
+  @property
+  def sample_ratio(self):
+      return self._sample_ratio
+
+  @property
+  def sample_delta(self):
+    return self._sample_delta
 
   def train_model(self, x_train: pd.DataFrame) -> None:
     """Trains a NS-NN Anomaly detector using the positive sample.
@@ -75,8 +83,8 @@ class NegativeSamplingRandomForestAd(sklearn.ensemble.RandomForestClassifier,
     sample_df_normalized = sample_utils.normalize(sample_df,
                                                   self._normalization_info)
     column_order = sample_utils.get_column_order(self._normalization_info)
-    x = np.float32(np.matrix(sample_df_normalized[column_order]))
-
+    # x = np.float32(np.matrix(sample_df_normalized[column_order]))
+    x = np.asarray(sample_df_normalized[column_order], dtype=np.float32)
     preds = super(NegativeSamplingRandomForestAd, self).predict_proba(x)
     sample_df['class_prob'] = preds[:, _NORMAL_CLASS]
     return sample_df

@@ -25,7 +25,7 @@ import tensorflow as tf
 
 _TEST_DATA = os.path.join(os.path.dirname(__file__), 'test_data')
 _POSITIVE_SAMPLE_FILE = 'positive_sample.csv'
-_MODEL_FILENAME = 'model-multivariate-ad'
+_MODEL_FILENAME = 'model-multivariate-ad.keras'
 
 _TEST_ARRAY_1 = [
     .054484184936692, 1.4254372432567062, 2.4085036629196743,

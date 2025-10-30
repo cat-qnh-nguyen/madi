@@ -22,9 +22,10 @@ from madi.utils import sample_utils
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import keras
 
 _TRAIN_VALIDATION_SPLIT = 0.8
-_MODEL_FILENAME = 'model-multivariate-ad'
+_MODEL_FILENAME = 'model-multivariate-ad.keras'
 _NORMALIZATION_FILENAME = 'normalization_info'
 
 
@@ -123,7 +124,7 @@ class NegativeSamplingNeuralNetworkAD(
         train_ngen,
         output_signature=(
             tf.TensorSpec(shape=(None, len(column_order)), dtype=tf.float32),
-            tf.TensorSpec(shape=(None), dtype=tf.float32),
+            tf.TensorSpec(shape=(None,), dtype=tf.float32),
         ),
     ).repeat(self._batch_size * self._epochs)
 
@@ -138,7 +139,7 @@ class NegativeSamplingNeuralNetworkAD(
         val_ngen,
         output_signature=(
             tf.TensorSpec(shape=(None, len(column_order)), dtype=tf.float32),
-            tf.TensorSpec(shape=(None), dtype=tf.float32)))
+            tf.TensorSpec(shape=(None, ), dtype=tf.float32)))
 
     if self._tpu_worker:
       resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
@@ -162,7 +163,7 @@ class NegativeSamplingNeuralNetworkAD(
       )
 
     early_stopping = tf.keras.callbacks.EarlyStopping(
-        monitor='val_binary_accuracy', patience=self._patience)
+        monitor='val_binary_accuracy', patience=self._patience, mode='max',)
 
     self._history = self._model.fit(
         x=train_dataset,
@@ -196,7 +197,8 @@ class NegativeSamplingNeuralNetworkAD(
         sample_df, self._normalization_info
     )
     column_order = sample_utils.get_column_order(self._normalization_info)
-    x = np.float32(np.matrix(sample_df_normalized[column_order]))
+    # x = np.float32(np.matrix(sample_df_normalized[column_order]))
+    x = np.asarray(sample_df_normalized[column_order], dtype=np.float32)
     y_hat = self._model.predict(x, verbose=1, steps=1)
     sample_df['class_prob'] = y_hat
     return sample_df
@@ -251,20 +253,20 @@ class NegativeSamplingNeuralNetworkAD(
         use_ema=False,
         ema_momentum=0.99,
         ema_overwrite_frequency=100,
-        jit_compile=True,
         name='RMSprop',
     )
     model.compile(
         loss='binary_crossentropy',
         optimizer=optimizer,
         metrics=[tf.keras.metrics.binary_accuracy],
+        jit_compile=True,
     )
     return model
 
   def save_model(self, model_dir: str) -> None:
     """Saves the trained AD model to the model directory model_dir."""
     model_file_path = os.path.join(model_dir, _MODEL_FILENAME)
-    tf.keras.models.save_model(self._model, model_file_path, overwrite=True)
+    keras.models.save_model(self._model, model_file_path, overwrite=True)
     logging.info('Sucessfully wrote the model to %s', model_file_path)
     normalization_file_path = os.path.join(model_dir, _NORMALIZATION_FILENAME)
     sample_utils.write_normalization_info(self._normalization_info,
@@ -275,7 +277,7 @@ class NegativeSamplingNeuralNetworkAD(
   def load_model(self, model_dir: str) -> None:
     """Loads the trained AD model from the model directory model_dir."""
     model_file_path = os.path.join(model_dir, _MODEL_FILENAME)
-    self._model = tf.keras.models.load_model(model_file_path)
+    self._model = keras.models.load_model(model_file_path)
     logging.info('Successfully loaded model from %s', model_file_path)
     normalization_file_path = os.path.join(model_dir, _NORMALIZATION_FILENAME)
     self._normalization_info = sample_utils.read_normalization_info(

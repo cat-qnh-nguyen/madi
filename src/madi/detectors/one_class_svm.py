@@ -22,14 +22,14 @@ import sklearn.svm
 class OneClassSVMAd(sklearn.svm.OneClassSVM, BaseAnomalyDetectionAlgorithm):
   """Wrapper class around the scikit-learn OC-SVM implementation."""
 
-  def __init__(self, *args, **kwargs):
+  def __init__(self, **kwargs):
     """Constructs a OC-SVM Anomaly Detector.
 
     Args:
       *args: See the klearn.svm.OneClassSVM.
       **kwargs: See the klearn.svm.OneClassSVM.
     """
-    super(OneClassSVMAd, self).__init__(*args, **kwargs)
+    super(OneClassSVMAd, self).__init__(**kwargs)
     self._normalization_info = None
 
   def train_model(self, x_train: pd.DataFrame) -> None:
@@ -44,7 +44,7 @@ class OneClassSVMAd(sklearn.svm.OneClassSVM, BaseAnomalyDetectionAlgorithm):
                                                 self._normalization_info)
     super(OneClassSVMAd, self).fit(X=normalized_x_train)
 
-  def predict(self, sample_df: pd.DataFrame) -> pd.DateOffset:
+  def predict(self, sample_df: pd.DataFrame) -> pd.DataFrame:
     """Performs anomaly detection on a new sample.
 
     Args:
@@ -57,7 +57,8 @@ class OneClassSVMAd(sklearn.svm.OneClassSVM, BaseAnomalyDetectionAlgorithm):
     sample_df_normalized = sample_utils.normalize(sample_df,
                                                   self._normalization_info)
     column_order = sample_utils.get_column_order(self._normalization_info)
-    x_test = np.float32(np.matrix(sample_df_normalized[column_order]))
+    # x_test = np.float32(np.matrix(sample_df_normalized[column_order]))
+    x_test = np.asarray(sample_df_normalized[column_order], dtype=np.float32)
     preds = super(OneClassSVMAd, self).predict(x_test)
     sample_df['class_prob'] = np.where(preds == -1, 0, preds)
     return sample_df

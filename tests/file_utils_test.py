@@ -25,7 +25,7 @@ class TestOpenTextResource:
 
   def _create_test_file(self, test_dir):
     temp_file = os.path.join(test_dir, "test_file.txt")
-    with open(temp_file, "wt", encoding="utf-8") as f:
+    with open(temp_file, "wt", encoding="utf-8", newline="\n") as f:
       f.write(self._FILE_CONTENTS)
 
     return temp_file

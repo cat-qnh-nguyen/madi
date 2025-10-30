@@ -110,6 +110,8 @@ class TestNegSampleNeuralNetDetector:
     """Tests NS-NN on single-mode Gaussian."""
 
     model_dir = os.path.join(tmpdir, 'models')
+    os.makedirs(model_dir, exist_ok=True)
+
     sample_ratio = 0.05
     ds = gaussian_mixture_dataset.GaussianMixtureDataset(
         n_dim=4,
